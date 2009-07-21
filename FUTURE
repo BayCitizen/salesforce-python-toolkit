@@ -1,0 +1,18 @@
+- Support for client certificates
+
+- Support for Metadata client
+  - solution at http://www.threepillarsoftware.com/soap_client_auth
+
+- Support for WSDL caching
+  - The default location (directory) is /tmp/suds so Windows users will need
+    to set the location to something that makes sense on Windows. 
+    - Is this still the case?
+  - Suds may be caching remote WSDLs automatically - check on this
+
+- SOAP compression (decompression not yet implemented by Suds)
+  - Accept-Encoding: gzip, deflate
+
+- persistent connections
+  - not supported as of urllib2 version in Python 3.1
+    - see comment in do_open() in Lib/urllib/request.py (or Lib/urllib2.py for Python 2.x)
+   

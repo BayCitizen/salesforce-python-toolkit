@@ -1,0 +1,61 @@
+Sacrifices we had to make when implementing the Toolkit (none of these impact the end-user), and 
+what needs to happen in Suds to remove each hack:
+
+  - Partner WSDL calls return lists containing strings instead of strings for <any/> elements
+    - This affects query(), queryAll(), queryMore(), retrieve(), and search()
+    - Hack is to recursively iterate through the QueryResult object and convert lists to strings
+    - Solution is for Suds to make the default type for anyType elements configurable
+
+  - Suds with Partner and Enterprise WSDLs return an empty string when no search() results found
+    - <result/> gets unmarshalled as '' instead of an empty SearchResult
+    - Hack is to return an empty SearchResult instead
+    - Solution is for Suds to check the XML and return SearchResult
+
+  - Enterprise retrieve() call is unable to recognize sf: prefixes in SOAP response
+    - Probably the same issue as https://fedorahosted.org/suds/ticket/12
+    - Hack is to emulate retrieve() using query()
+    - Solution is likely similar to the one in the issue link above
+
+  - Enterprise objects cannot be instantiated like self._sforce.factory.create('ens:Lead')
+    because entire WSDL gets parsed, taking minutes to hours depending on WSDL size
+    - Hack is to instantiate an sObject, and manually marshall the data into XML, passing the
+      SAX element object to the SOAP method call
+    - The object returned by generateObject() behaves identically, and when the underlying SOAP
+      layer can resolve the dependcies quickly, there will be no code changes required in order
+      to instantiate and use a 'Lead' object instead of an 'sObject' object
+    - Solution is to optimize this somehow - maybe the referenced types (e.g. ens:Contact in Lead)
+      aren't being cached?
+      - Instantiating an ens:Lead up front would eliminate the need to marshall the data into XML
+      - The XML below with circular references to Lead and Contact types resolves quickly, 
+        indicating that this isn't an infinite loop
+
+            <complexType name="Contact">
+                <complexContent>
+                    <extension base="ens:sObject">
+                        <sequence>
+                        <element name="Lead" nillable="true" minOccurs="0" type="ens:Lead"/>
+                        <element name="Affiliate_Code_Opportunity__c" nillable="true" minOccurs="0" type="xsd:string"/>
+                        <element name="Affiliate_Code__c" nillable="true" minOccurs="0" type="xsd:string"/>
+                        <element name="AnnualRevenue" nillable="true" minOccurs="0" type="xsd:double"/>
+                        <element name="Annual_Revenue__c" nillable="true" minOccurs="0" type="xsd:string"/>
+                        </sequence>
+                    </extension>
+                </complexContent>
+            </complexType>
+
+            <complexType name="Lead">
+                <complexContent>
+                    <extension base="ens:sObject">
+                        <sequence>
+                        <element name="Contact" nillable="true" minOccurs="0" type="ens:Contact"/>
+                        <element name="Affiliate_Code_Opportunity__c" nillable="true" minOccurs="0" type="xsd:string"/>
+                        <element name="Affiliate_Code__c" nillable="true" minOccurs="0" type="xsd:string"/>
+                        <element name="AnnualRevenue" nillable="true" minOccurs="0" type="xsd:double"/>
+                        <element name="Annual_Revenue__c" nillable="true" minOccurs="0" type="xsd:string"/>
+                        </sequence>
+                    </extension>
+                </complexContent>
+            </complexType>
+
+      
+

@@ -1,0 +1,451 @@
+All of the examples work against either the Enterprise WSDL or the Partner WSDL.
+
+The examples will be in the same order as they are found in the Salesforce API Reference at
+http://www.salesforce.com/us/developer/docs/api/index.htm
+
+NOTE:  These examples are not intended to teach the Salesforce API; rather, they are here to 
+       illustrate how the Python Toolkit implements the Salesforce API.
+
+Prerequisites
+-------------
+All examples below assume the Toolkit has been instantiated and the connection has been made.
+
+Partner WSDL
+------------
+from sforce.partner import SforcePartnerClient
+h = SforcePartnerClient('/path/to/partner.wsdl.xml')
+
+Enterprise WSDL
+---------------
+from sforce.enterprise import SforceEnterpriseClient
+h = SforceEnterpriseClient('/path/to/enterprise.wsdl.xml')
+
+
+Additionally, all examples except login() assume you are logged in, using a call such as
+h.login('joe@example.com.sbox1', '*passwordhere*', '*securitytokenhere*')
+
+
+Conventions
+-----------
+<create lead> - implies that you copy and paste the code from the 'create lead' section of create(),
+                so you have a Lead in the variable 'lead' and a SaveResult in the variable 'result'
+
+<create 2 leads> - same as create lead, except copy and past the code from 'create 2 leads' in 
+                   create()
+
+
+Variable Names:
+---------------
+h - reference to an instance of the Toolkit object
+result - the result of a Salesforce method call
+lead - a lead object
+
+
+Return Typing
+-------------
+All of the examples assume loose return typing, where a create() call that creates a single object, 
+for instance, returns a single SaveResult, and a create() call that creates multiple objects returns
+a list of SaveResult objects.
+
+
+----------------------------------------------------------------------------------------------------
+
+Core Calls:
+
+convertLead()
+-------------
+<create lead>
+leadConvert = h.generateObject('LeadConvert')
+leadConvert.leadId = result.id
+# the possible values for convertedStatus depend on what's in the picklist for your org
+# you can take a look at the 'Convert Lead' screen in the UI for your API user to see what's there
+leadConvert.convertedStatus = 'Qualified' 
+result = h.convertLead(leadConvert)
+
+
+create()
+--------
+# create lead
+lead = h.generateObject('Lead')
+lead.FirstName = 'Joe'
+lead.LastName = 'Moke'
+lead.Company = 'Jamoke, Inc.'
+lead.Email = 'joe@example.com'
+result = h.create(lead)
+
+or
+
+# create 2 leads
+lead = h.generateObject('Lead')
+lead.FirstName = 'Joe'
+lead.LastName = 'Moke'
+lead.Company = 'Jamoke, Inc.'
+lead.Email = 'joe@example.com'
+
+lead2 = h.generateObject('Lead')
+lead2.FirstName = 'Bob'
+lead2.LastName = 'Moke'
+lead2.Company = 'Jamoke, Inc.'
+lead2.Email = 'bob@example.com'
+
+result = h.create((lead, lead2))
+
+delete()
+--------
+<create lead>
+result = h.delete(result.id)
+
+or
+<create 2 leads>
+ids = []
+for SaveResult in result:
+  ids.append(SaveResult.id)
+result = h.delete(ids)
+
+
+emptyRecycleBin()
+-----------------
+result = h.emptyRecycleBin('*ID HERE*')
+
+or
+
+result = h.emptyRecycleBin(('*ID HERE*', '*ANOTHER ID HERE*'))
+
+
+getDeleted()
+------------
+result = h.getDeleted('Lead', '2009-06-01T23:01:01Z', '2019-01-01T23:01:01Z')
+
+
+getUpdated()
+------------
+result = h.getUpdated('Lead', '2009-06-01T23:01:01Z', '2019-01-01T23:01:01Z')
+
+
+invalidateSessions()
+--------------------
+result = h.invalidateSessions(h.getSessionId())
+
+or
+
+result = h.invalidateSessions((h.getSessionId(), '*ANOTHER SESSION ID HERE*'))
+
+
+login()
+-------
+h.login('joe@example.com.sbox1', '*passwordhere*', '*securitytokenhere*')
+
+
+logout()
+--------
+result = h.logout()
+
+
+merge()
+-------
+<create two leads with variable names lead and lead2>
+
+# set the corresponding resulting id in 'lead'
+lead.Id = result[0].id
+
+mergeRequest = h.generateObject('MergeRequest')
+mergeRequest.masterRecord = lead
+mergeRequest.recordToMergeIds = result[1].id
+result = h.merge(mergeRequest)
+
+
+process()
+---------
+NOTE:  The documentation for this call is currently incorrect, the Process*Request objects take a
+       property 'comments', not 'comment' as stated here:
+       http://www.salesforce.com/us/developer/docs/api/Content/sforce_api_calls_process.htm
+
+       However, judging from the fact that it's still incorrect in the docs, it's a similar issue 
+       to protected inheritance in C++ - it's in there 'for completeness' :-)
+
+       By the way, doesn't that just sum up half of C++?
+
+processRequest = h.generateObject('ProcessSubmitRequest')
+processRequest.objectId = '*ID OF OBJECT PROCESS REQUEST AFFECTS*'
+processRequest.comments = 'This is what I think.'
+result = h.process(processRequest)
+
+or
+
+processRequest = h.generateObject('ProcessWorkitemRequest')
+processRequest.action = 'Approve'
+processRequest.workitemId = '*ID OF OBJECT PROCESS REQUEST AFFECTS*'
+processRequest.comments = 'I approved this request.'
+result = h.process(processRequest)
+
+
+query()
+-------
+result = h.query('SELECT FirstName, LastName FROM Lead')
+
+
+queryAll()
+----------
+result = h.queryAll('SELECT Account.Name, FirstName, LastName FROM Contact LIMIT 2')
+for record in result.records:
+  print record.FirstName, record.LastName
+  print record.Account.Name
+
+
+queryMore()
+-----------
+queryOptions = h.generateHeader('QueryOptions')
+queryOptions.batchSize = 200
+h.setQueryOptions(queryOptions)
+
+result = h.queryAll('SELECT FirstName, LastName FROM Lead')
+result = h.queryMore(result.queryLocator)
+# result.done = True indicates the final batch of results has been sent
+
+retrieve()
+----------
+result = h.retrieve('FirstName, LastName, Company, Email', 'Lead', '00QR0000002yyVs')
+
+or
+
+result = h.retrieve('FirstName, LastName, Company, Email', 'Lead', ('00QR0000002yyVs', '00QR0000003HWMPLA4'))
+
+
+search()
+--------
+result = h.search('FIND {Joe Moke} IN Name Fields RETURNING Lead(Name, Phone)')
+
+
+undelete()
+----------
+result = h.undelete('*ID HERE*')
+
+or
+
+result = h.undelete(('*ID HERE*', '*ANOTHER ID HERE*'))
+
+
+update()
+--------
+<create lead>
+lead.Id = result.id
+
+# As a single value, 'Email' would not _have_ to be wrapped in a tuple/list
+lead.fieldsToNull = ('Email')
+# to set a value to NULL in Salesforce, must also remove the value from the lead variable or it will
+# give you a 'Duplicate Values...' exception message
+lead.Email = None
+h.update(lead)
+
+
+upsert()
+--------
+<create lead>
+lead.Id = result.id
+lead.FirstName = 'Bob'
+h.upsert('Id', lead)
+
+
+----------------------------------------------------------------------------------------------------
+
+Describe Calls:
+
+describeGlobal()
+----------------
+result = h.describeGlobal()
+
+
+describeLayout()
+----------------
+result = h.describeLayout('Lead', '012000000000000AAA') # Master Record Type
+
+
+describeSObject()
+-----------------
+result = h.describeSObject('Lead')
+
+
+describeSObjects()
+------------------
+result = h.describeSObjects(('Lead', 'Contact'))
+
+
+describeTabs()
+--------------
+result = h.describeTabs()
+
+
+----------------------------------------------------------------------------------------------------
+
+Utility Calls:
+
+getServerTimestamp()
+--------------------
+result = h.getServerTimestamp()
+
+
+getUserInfo()
+-------------
+result = h.getUserInfo()
+
+
+resetPassword()
+---------------
+result = h.resetPassword('*USER ID HERE*')
+
+
+sendEmail()
+-----------
+# Email a single person
+email = h.generateObject('SingleEmailMessage')
+email.toAddresses = 'joe@example.com'
+email.subject = 'This is my subject.'
+email.plainTextBody = 'This is the plain-text body of my email.'
+result = h.sendEmail([email])
+
+# MassEmailMessage
+email = h.generateObject('MassEmailMessage')
+email.targetObjectIds = (('*LEAD OR CONTACT ID TO EMAIL*', '*ANOTHER LEAD OR CONTACT TO EMAIL*'))
+email.templateId = '*EMAIL TEMPLATE ID TO USE*'
+result = h.sendEmail([email])
+
+
+setPassword()
+-------------
+result = h.setPassword('*USER ID HERE*', '*NEW PASSWORD HERE*')
+
+
+----------------------------------------------------------------------------------------------------
+
+Toolkit-Specific Utility Calls:
+
+generateHeader()
+----------------
+header = h.generateHeader('AllowFieldTruncationHeader');
+
+
+generateObject()
+----------------
+lead = h.generateObject('Lead')
+
+
+getLastRequest()
+----------------
+result = h.getLastRequest()
+
+
+getLastResponse()
+-----------------
+result = h.getLastResponse()
+
+----------------------------------------------------------------------------------------------------
+
+SOAP Headers
+Note that you need only to call the appropriate set*() call once per header, and the header will
+automatically be attached to the SOAP envelope for the calls that it pertains to.  The SessionHeader
+header is set for you after a successful login() call, but it's a public method for the edge case 
+where you need to piggyback on another user's session.
+
+
+AllowFieldTruncationHeader
+--------------------------
+header = h.generateHeader('AllowFieldTruncationHeader');
+header.allowFieldTruncation = False
+h.setAllowFieldTruncationHeader(header)
+
+
+AssignmentRuleHeader
+--------------------------
+header = h.generateHeader('AssignmentRuleHeader');
+header.useDefaultRule = True
+h.setAssignmentRuleHeader(header)
+
+or
+
+header = h.generateHeader('AssignmentRuleHeader');
+header.assignmentRuleId = '*ASSIGNMENT RULE ID HERE*'
+h.setAssignmentRuleHeader(header)
+
+
+CallOptions
+--------------------------
+Note that this header only applies to the Partner WSDL.
+
+header = h.generateHeader('CallOptions');
+header.client = '*MY CLIENT STRING*'
+header.defaultNamespace = '*DEVELOPER NAMESPACE PREFIX*'
+h.setCallOptions(header)
+
+
+EmailHeader
+--------------------------
+header = h.generateHeader('EmailHeader');
+header.triggerAutoResponseEmail = True
+header.triggerOtherEmail = True
+header.triggerUserEmail = True
+h.setEmailHeader(header)
+
+
+LocaleOptions
+--------------------------
+header = h.generateHeader('LocaleOptions');
+header.language = 'en_US'
+h.setLocaleOptions(header)
+
+
+LoginScopeHeader
+--------------------------
+header = h.generateHeader('LoginScopeHeader');
+header.organizationId = '*YOUR ORGANIZATION ID HERE*'
+header.portalId = '*YOUR ORGANIZATION\'S PORTAL ID HERE*'
+h.setLoginScopeHeader(header)
+
+
+MruHeader
+--------------------------
+header = h.generateHeader('MruHeader');
+header.updateMru = True
+h.setMruHeader(header)
+
+
+PackageVersionHeader
+--------------------------
+NOTE:  I believe this example works.  Salesforce accepts the header, and the call in which the 
+       header is embedded succeeds, but as there is no available documentation on what the XML
+       request should look like, and since I don't have any APEX code available that deals with
+       package versions, I can't be 100% sure.  It is new in version 16.0 of the API, so 
+       documentation should materialize soon :)
+
+       Note also that this is the only header that takes something other than a series of key-value 
+       pairs.
+
+header = h.generateHeader('PackageVersionHeader');
+pkg = {}
+pkg['majorNumber'] = 3
+pkg['minorNumber'] = 0
+pkg['namespace'] = 'SFGA'
+header.packageVersions = [pkg, pkg]
+h.setPackageVersionHeader(header)
+
+
+QueryOptions
+--------------------------
+header = h.generateHeader('QueryOptions');
+header.batchSize = 200
+h.setQueryOptions(header)
+
+
+SessionHeader
+--------------------------
+header = h.generateHeader('SessionHeader');
+header.sessionId = '*PIGGYBACK SESSION ID HERE*'
+h.setSessionHeader(header)
+
+
+UserTerritoryDeleteHeader
+--------------------------
+header = h.generateHeader('UserTerritoryDeleteHeader');
+header.transferToUserId = '*USER ID HERE*'
+h.setUserTerritoryDeleteHeader(header)
+
+

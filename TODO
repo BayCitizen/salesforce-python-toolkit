@@ -1,0 +1,63 @@
+------------------------
+
+POST-PUBLIC ALPHA
+
+- add tests for strict return types
+
+- test unicode
+
+- test proxy, with and without HTTP auth
+
+- ensure namespaced add-ons (SFGA, etc.) work
+
+- remove SforcePartnerClient's dependency _marshallSObjects()
+  - need to instantiate LeadConvert object, move generateObject into E/P
+  - Conditionally instantiate tns: instead of ens:
+
+- Convert suds.sax.text.Text to string
+
+------------------------
+
+DONE/FIXED
+
+- query() needs to give the user a way to get at the sObjects - 
+  if they queried enough info (Id, LastName, Company, etc...)
+  should be able to pass that directly to update(), merge(), etc.
+  - works fine for Enterprise
+  - doesn't work for Partner
+    - query() in Partner returns lists instead of strings
+
+- SSL
+
+- Accept local files
+
+- retrieve() in Enterprise returns sf:
+  - query() emulating retrieve() is the answer until Suds gets patched
+
+- Add examples for every call with documentation (EXAMPLES file)
+
+- check fieldsToNull
+
+- create/update results return list of SaveResult object
+  - implemented SFORCE_STRICT_METHOD_TYPING
+    - just need to implement the var now
+
+- move to LGPL
+
+- Once unit tests are written, see if we can remove obj: and sf: and replace with ens:
+  - Add unit test for fieldsToNull, P & E
+
+- Make logging configurable
+  - Just added README pointing to Suds docs
+
+- Finish separating out unit tests
+  - Commented tests
+  - DoNotCall bool return
+
+- Fix docstrings
+
+- Test CallOptions
+
+- Ensure both P&E pass with 0/1/2 fieldsToNull on update call, query record to test correctly
+
+- move _marshallSObjects() into SforceBaseClient
