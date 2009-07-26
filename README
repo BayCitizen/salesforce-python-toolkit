@@ -37,7 +37,6 @@ Dependencies:
       - This method requires setuptools.
     - If you have a previous version of Suds installed, or don't want to install setuptools, you 
       can simply unpack 0.3.6+ and add the path to PYTHONPATH.
-    - TODO discuss proxy requirements
 
 
 Tested with:
@@ -48,6 +47,29 @@ Tested with:
 
 Examples:
   - You can find examples for every method call in the EXAMPLES file.
+
+
+Caching:
+  - The Toolkit supports caching of remote WSDL files for a defineable amount of time (in seconds):
+
+h = SforceEnterpriseClient('https://example.com/enterprise.wsdl.xml', cacheDuration = 90) 
+
+h = SforcePartnerClient('https://example.com/partner.wsdl.xml', cacheDuration = 86400) # 1 day
+
+
+Proxies:
+  - The toolkit supports HTTP proxies, but not HTTPS.  This is due to a limitation in the underlying
+    urllib2 library that ships with Python.  Details can be found at the bottom of this document.
+
+    It should be noted that all traffic between the proxy and Salesforce will be sent over HTTPS.
+
+    The constructors take an argument 'proxy', e.g.
+
+h = SforceEnterpriseClient('enterprise.wsdl.xml', proxy = {'http': 'proxy.example.com:8888'}) 
+
+h = SforcePartnerClient('partner.wsdl.xml', proxy = {'http': 'proxy.example.com:8888'}) 
+
+    Any attempt to pass an https proxy will raise a NotImplementedError.
 
 
 Inspecting your data:
@@ -114,6 +136,7 @@ Conventions:
 Caveats (short form):
   - gzip/deflate not implemented
   - HTTP 1.1 persistent connections not supported
+  - Supports HTTP proxies, not HTTPS (traffic between the proxy and Salesforce still sent HTTPS)
   - na0.salesforce.com (a.k.a ssl.salesforce.com) probably doesn't work
 
 
@@ -130,6 +153,9 @@ Caveats (long form):
       - This is still an issue in Python 3.1, though now there is the following comment:
         # TODO(jhylton): Should this be redesigned to handle
         # persistent connections?
+  - Connections to a proxy must use HTTP and not HTTPS due to a limitation in urllib2, where it
+    does not implement the HTTP CONNECT method.  All traffic between the proxy and Salesforce will
+    of course be sent over HTTPS.
   - na0.salesforce.com (a.k.a ssl.salesforce.com) probably doesn't work
     - This affects customers that signed up from the US web site prior to roughly June 2002
       - http://forums.sforce.com/sforce/board/message?board.id=PerlDevelopment&message.id=401

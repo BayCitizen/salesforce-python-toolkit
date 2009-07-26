@@ -4,11 +4,9 @@ POST-PUBLIC ALPHA
 
 - add tests for strict return types
 
-- test unicode
-
-- test proxy, with and without HTTP auth
-
-- ensure namespaced add-ons (SFGA, etc.) work
+- test proxy with HTTP auth
+  - https://fedorahosted.org/suds/wiki/Documentation#HTTPAUTHENTICATION
+  - Check to see if we can use RFC-2617-compliant solution
 
 - remove SforcePartnerClient's dependency _marshallSObjects()
   - need to instantiate LeadConvert object, move generateObject into E/P
@@ -61,3 +59,9 @@ DONE/FIXED
 - Ensure both P&E pass with 0/1/2 fieldsToNull on update call, query record to test correctly
 
 - move _marshallSObjects() into SforceBaseClient
+
+- test proxy without HTTP auth
+
+- ensure namespaced add-ons (SFGA, etc.) work
+
+- test unicode

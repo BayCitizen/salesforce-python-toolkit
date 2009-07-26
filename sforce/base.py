@@ -19,7 +19,7 @@ import sys
 import os.path
 
 from suds.client import Client
-from suds.transport import Cache
+from suds.transport.cache import FileCache
 import suds.sudsobject
 from suds.sax.element import Element
 
@@ -28,7 +28,7 @@ class SforceBaseClient(object):
   _sessionId = None
   _location = None
   _product = 'Python Toolkit'
-  _version = '0.1'
+  _version = (0, 1, 1)
   _objectNamespace = None
   _strictResultTyping = False
 
@@ -45,23 +45,17 @@ class SforceBaseClient(object):
   _sessionHeader = None
   _userTerritoryDeleteHeader = None
 
-  def __init__(self, wsdl, **kwargs):
+  def __init__(self, wsdl, cacheDuration = 0, **kwargs):
     '''
     Connect to Salesforce
    
     'wsdl' : Location of WSDL
-    'proxy' : Dict of pairs of 'protocol' and 'location'
-              e.g. {'http': 'my.insecure.proxy.example.com:80',
-                    'https': 'my.secure.proxy.example.com:443'}
+    'cacheDuration' : Duration of HTTP GET cache in seconds, or 0 for no cache
+    'proxy' : Dict of pair of 'protocol' and 'location'
+              e.g. {'http': 'my.insecure.proxy.example.com:80'}
     'username' : Username for HTTP auth when using a proxy ONLY
-    'username' : Password for HTTP auth when using a proxy ONLY
+    'password' : Password for HTTP auth when using a proxy ONLY
     '''
-    # Set HTTP headers
-    headers = {'User-Agent': 'Salesforce/' + self._product + '/' + self._version}
-
-    # This HTTP header will not work until Suds gunzips/inflates the content
-    # 'Accept-Encoding': 'gzip, deflate'
-
     # Suds can only accept WSDL locations with a protocol prepended
     if '://' not in wsdl:
       # TODO windows users???
@@ -70,12 +64,35 @@ class SforceBaseClient(object):
       if os.path.isfile(wsdl):
         wsdl = 'file://' + os.path.abspath(wsdl)
 
-    if 0:
-    #if proxy is not None:
-      self._sforce = Client(wsdl, headers = headers, cache = None, proxy = proxy, \
-                            username = username, password = password)
+    if cacheDuration > 0:
+      cache = FileCache()
+      cache.setduration(seconds = cacheDuration)
     else:
-      self._sforce = Client(wsdl, headers = headers, cache = None)
+      cache = None
+    
+    self._sforce = Client(wsdl, cache = cache)
+
+    # Set HTTP headers
+    headers = {'User-Agent': 'Salesforce/' + self._product + '/' + '.'.join(str(x) for x in self._version)}
+
+    # This HTTP header will not work until Suds gunzips/inflates the content
+    # 'Accept-Encoding': 'gzip, deflate'
+
+    self._sforce.set_options(headers = headers)
+
+    if kwargs.has_key('proxy'):
+      # urllib2 cannot handle HTTPS proxies yet (see bottom of README)
+      if kwargs['proxy'].has_key('https'):
+        raise NotImplementedError('Connecting to a proxy over HTTPS not yet implemented due to a \
+limitation in the underlying urllib2 proxy implementation.  However, traffic from a proxy to \
+Salesforce will use HTTPS.')
+      self._sforce.set_options(proxy = kwargs['proxy'])
+
+    if kwargs.has_key('username'):
+      self._sforce.set_options(username = kwargs['username'])
+
+    if kwargs.has_key('password'):
+      self._sforce.set_options(password = kwargs['password'])
 
   # Toolkit-specific methods
 
@@ -316,6 +333,7 @@ class SforceBaseClient(object):
 
   def getLastResponse(self):
     return str(self._sforce.last_received())
+
   # Core calls
 
   def convertLead(self, leadConverts):
@@ -396,7 +414,6 @@ class SforceBaseClient(object):
     self._sessionId = result['sessionId']
 
     # change URL to point from test.salesforce.com to something like cs2-api.salesforce.com
-    # TODO Ensure this should still change in case of proxy
     self._setEndpoint(result['serverUrl'])
 
     # na0.salesforce.com (a.k.a. ssl.salesforce.com) requires ISO-8859-1 instead of UTF-8
