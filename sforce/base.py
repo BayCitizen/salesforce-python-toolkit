@@ -184,7 +184,13 @@ Salesforce will use HTTPS.')
     '''
     Set the endpoint after when Salesforce returns the URL after successful login()
     '''
-    self._sforce.wsdl.service.setlocation(location)
+    # suds 0.3.7+ supports multiple wsdl services, but breaks setlocation :(
+    # see https://fedorahosted.org/suds/ticket/261
+    try:
+      self._sforce.set_options(location = location)
+    except:
+      self._sforce.wsdl.service.setlocation(location)
+
     self._location = location
 
   def _setHeaders(self, call = None):

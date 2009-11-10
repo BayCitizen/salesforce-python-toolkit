@@ -156,6 +156,7 @@ Caveats (long form):
   - Connections to a proxy must use HTTP and not HTTPS due to a limitation in urllib2, where it
     does not implement the HTTP CONNECT method.  All traffic between the proxy and Salesforce will
     of course be sent over HTTPS.
+    - http://code.activestate.com/recipes/456195/ illustrates a possible workaround
   - na0.salesforce.com (a.k.a ssl.salesforce.com) probably doesn't work
     - This affects customers that signed up from the US web site prior to roughly June 2002
       - http://forums.sforce.com/sforce/board/message?board.id=PerlDevelopment&message.id=401
