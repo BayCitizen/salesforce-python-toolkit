@@ -35,7 +35,7 @@ class SforceBaseClient(object):
   _sessionId = None
   _location = None
   _product = 'Python Toolkit'
-  _version = (0, 1, 1)
+  _version = (0, 1, 3)
   _objectNamespace = None
   _strictResultTyping = False
 
