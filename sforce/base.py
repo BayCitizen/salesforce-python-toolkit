@@ -19,7 +19,14 @@ import sys
 import os.path
 
 from suds.client import Client
-from suds.transport.cache import FileCache
+
+try:
+  # suds 0.3.8 and prior
+  from suds.transport.cache import FileCache
+except:
+  # suds 0.3.9+
+  from suds.cache import FileCache
+
 import suds.sudsobject
 from suds.sax.element import Element
 
