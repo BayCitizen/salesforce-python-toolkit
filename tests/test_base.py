@@ -34,12 +34,14 @@ ASSIGNMENT_RULE_HEADER_STRING = '<tns:useDefaultRule>true</tns:useDefaultRule>'
 CALL_OPTIONS_STRING = '<tns:defaultNamespace>*DEVELOPER NAMESPACE PREFIX*</tns:defaultNamespace>'
 EMAIL_HEADER_STRING = '<tns:triggerAutoResponseEmail>true</tns:triggerAutoResponseEmail>'
 LOCALE_OPTIONS_STRING = '<tns:language>en_US</tns:language>'
-LOGIN_SCOPE_HEADER_STRING = '<tns:organizationId xsi:type="ns1:ID">00D000xxxxxxxxx</tns:organizationId>'
+# starting in 0.3.7, xsi:type="ns1:ID" is omitted from opening tag
+LOGIN_SCOPE_HEADER_STRING = '>00D000xxxxxxxxx</tns:organizationId>'
 MRU_HEADER_STRING = '<tns:updateMru>true</tns:updateMru>'
-PACKAGE_VERSION_HEADER_STRING = '<tns:packageVersions>{majorNumber = 3, namespace = SFGA, minorNumber = 0, }</tns:packageVersions>'
+PACKAGE_VERSION_HEADER_STRING = '<tns:namespace>SFGA</tns:namespace>'
 QUERY_OPTIONS_STRING = '<tns:batchSize>200</tns:batchSize>'
 SESSION_HEADER_STRING = '</tns:sessionId>'
-USER_TERRITORY_DELETE_HEADER_STRING = '<tns:transferToUserId xsi:type="ns1:ID">005000xxxxxxxxx</tns:transferToUserId>'
+# starting in 0.3.7, xsi:type="ns1:ID" is omitted from opening tag
+USER_TERRITORY_DELETE_HEADER_STRING = '>005000xxxxxxxxx</tns:transferToUserId>'
 
 class SforceBaseClientTest(unittest.TestCase):
   def setUp(self):
@@ -324,8 +326,8 @@ class SforceBaseClientTest(unittest.TestCase):
   def setPackageVersionHeader(self):
     header = self.h.generateHeader('PackageVersionHeader');
     pkg = {}
-    pkg['majorNumber'] = 3
-    pkg['minorNumber'] = 0
+    pkg['majorNumber'] = 1
+    pkg['minorNumber'] = 2
     pkg['namespace'] = 'SFGA'
     header.packageVersions = pkg
     self.h.setPackageVersionHeader(header)
@@ -817,8 +819,13 @@ class SforceBaseClientTest(unittest.TestCase):
 
     self.assertTrue(hasattr(result, 'encoding'))
     self.assertTrue(hasattr(result, 'maxBatchSize'))
-    self.assertTrue('Account' in result.types)
-    self.assertTrue('Contact' in result.types)
+
+    foundAccount = False
+    for object in result.sobjects:
+      if object.name == 'Account':
+        foundAccount = True 
+
+    self.assertTrue(foundAccount)
 
     self.checkHeaders('describeGlobal')
 
