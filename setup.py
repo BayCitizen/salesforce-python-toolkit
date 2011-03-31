@@ -10,6 +10,6 @@ setup(
     ],
 
     install_requires=[
-        'suds',
+        'suds==0.3.9',
     ],
 )
